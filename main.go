@@ -1,21 +1,3 @@
-// package main
-
-// import (
-// 	"os"
-
-// 	"github.com/nxczje/vffuf/pkg"
-// )
-
-//	func main() {
-//		//get input from user
-//		file := os.Args[1]
-//		//check if file exists and is a csv
-//		check := pkg.Checkfile(file)
-//		//process the file
-//		if check {
-//			pkg.Process_csv(file)
-//		}
-//	}
 package main
 
 import (
