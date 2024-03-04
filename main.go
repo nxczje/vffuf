@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/kr/pretty"
 )
 
@@ -112,7 +113,18 @@ func (dtb *DirectoryTreeBuilder) printDirectoryTree(tree map[string]interface{},
 			} else {
 				currentPath += key
 			}
-			pretty.Println(currentPath)
+			// pretty.Println(currentPath)
+			if status == "200" {
+				color.Green(currentPath)
+			} else if status == "403" {
+				color.Yellow(currentPath)
+			} else if status == "404" {
+				color.Red(currentPath)
+			} else if status == "301" {
+				color.Blue(currentPath)
+			} else {
+				pretty.Println(currentPath)
+			}
 			nextIndent := indent + 1
 			lastItemChild := lastItemFlag && len(subTree) == 0
 			dtb.printDirectoryTree(subTree, nextIndent, lastItemChild)
