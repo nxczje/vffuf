@@ -43,30 +43,37 @@ func (dtb *DirectoryTreeBuilder) buildDirectoryTree(ffufOutput []byte) error {
 		}
 
 		url, ok := resultMap["url"].(string)
+		host, ok := resultMap["host"].(string)
 		if !ok || !strings.HasPrefix(url, "https://") {
 			continue
 		}
 
 		parts := strings.Split(url, "/")[3:]
-		dtb.addPathToTree(parts, resultMap)
+		dtb.addPathToTree(host, parts, resultMap)
 	}
 	return nil
 }
 
-func (dtb *DirectoryTreeBuilder) addPathToTree(parts []string, result map[string]interface{}) {
-	currentLevel := dtb.DirectoryTree
+func (dtb *DirectoryTreeBuilder) addPathToTree(host string, parts []string, result map[string]interface{}) {
+	currentLevel := dtb.DirectoryTree[host]
+	if currentLevel == nil {
+		currentLevel = make(map[string]interface{})
+		dtb.DirectoryTree[host] = currentLevel
+	}
 
 	for i, part := range parts {
-		if i == len(parts)-1 {
-			status, _ := result["status"].(float64)
-			length, _ := result["length"].(float64)
-			currentLevel[part] = map[string]interface{}{"_status": strconv.Itoa(int(status)), "_length": strconv.Itoa(int(length))}
-		} else {
-			_, exists := currentLevel[part]
-			if !exists {
-				currentLevel[part] = make(map[string]interface{})
+		if currentLevelMap, ok := currentLevel.(map[string]interface{}); ok {
+			if i == len(parts)-1 {
+				status, _ := result["status"].(float64)
+				length, _ := result["length"].(float64)
+				currentLevelMap[part] = map[string]interface{}{"_status": strconv.Itoa(int(status)), "_length": strconv.Itoa(int(length))}
+			} else {
+				_, exists := currentLevelMap[part]
+				if !exists {
+					currentLevelMap[part] = make(map[string]interface{})
+				}
+				currentLevel = currentLevelMap[part].(map[string]interface{})
 			}
-			currentLevel = currentLevel[part].(map[string]interface{})
 		}
 	}
 }
@@ -95,15 +102,15 @@ func (dtb *DirectoryTreeBuilder) printDirectoryTree(tree map[string]interface{},
 			} else {
 				currentPath += key
 			}
-			// pretty.Println(currentPath)
-			if status == "200" {
+			statusInt, _ := strconv.Atoi(status)
+			if 200 <= statusInt && statusInt < 300 {
 				color.Green(currentPath)
-			} else if status == "403" {
+			} else if 300 <= statusInt && statusInt < 400 {
 				color.Yellow(currentPath)
-			} else if status == "404" {
+			} else if 400 <= statusInt && statusInt < 500 {
 				color.Red(currentPath)
-			} else if status == "301" {
-				color.Blue(currentPath)
+			} else if 500 <= statusInt && statusInt < 600 {
+				color.Magenta(currentPath)
 			} else {
 				pretty.Println(currentPath)
 			}
