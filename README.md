@@ -9,3 +9,8 @@ Install
 ```
 go install -v github.com/nxczje/vffuf@latest
 ```
+
+### Use
+```
+vffuf -f file.json -k "FUZZ"
+```

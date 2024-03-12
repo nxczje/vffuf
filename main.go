@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,7 +45,7 @@ func (dtb *DirectoryTreeBuilder) buildDirectoryTree(ffufOutput []byte) error {
 
 		url, ok := resultMap["url"].(string)
 		host, ok := resultMap["host"].(string)
-		if !ok || !strings.HasPrefix(url, "https://") {
+		if !ok || !strings.HasPrefix(url, "http") {
 			continue
 		}
 
@@ -97,7 +98,7 @@ func (dtb *DirectoryTreeBuilder) printDirectoryTree(tree map[string]interface{},
 			status, ok := subTree["_status"].(string)
 			length, ok2 := subTree["_length"].(string)
 			if ok && ok2 {
-				currentPath += fmt.Sprintf("%s (Status: %s), (Length: %s)", key, status, length)
+				currentPath += fmt.Sprintf("%s (Status: %s |Length: %s)", key, status, length)
 				delete(subTree, "_status")
 			} else {
 				currentPath += key
@@ -131,6 +132,7 @@ func readFFUFOutput(jsonFile string) ([]byte, error) {
 
 func main() {
 	jsonFile := flag.String("f", "", "Path to the JSON file containing ffuf output.")
+	keyword := flag.String("k", "", "Keyword to extract from the ffuf output.")
 	flag.Parse()
 
 	if *jsonFile == "" {
@@ -142,6 +144,41 @@ func main() {
 	ffufOutput, err := readFFUFOutput(*jsonFile)
 	if err != nil {
 		log.Fatalf("%v", err)
+	}
+
+	if *keyword != "" {
+		arr := []string{}
+		var data_file map[string]interface{}
+		filedata, _ := readFFUFOutput(*jsonFile)
+		err := json.Unmarshal(filedata, &data_file)
+		if err != nil {
+			log.Fatal(err)
+
+		}
+
+		results, ok := data_file["results"].([]interface{})
+		if !ok {
+			log.Fatal(ok)
+		}
+		for _, result := range results {
+			resultMap, ok := result.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			input, _ := resultMap["input"].(map[string]interface{})[*keyword].(string)
+			arr = append(arr, input)
+		}
+		file, err := os.Create("output.txt")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+		slice := arr[:]
+		slices.Sort(slice)
+		arr = slices.Compact[[]string, string](arr)
+		for _, line := range arr {
+			fmt.Fprintln(file, line)
+		}
 	}
 
 	dtb := NewDirectoryTreeBuilder()
